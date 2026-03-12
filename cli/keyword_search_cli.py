@@ -9,6 +9,10 @@ import lib.search as ls
 with open(Path(__file__).parent.parent.joinpath("data","movies.json")) as f:
     MDB = json.load(f)
 
+# Load stopwords
+with open(Path(__file__).parent.parent.joinpath("data","stopwords.txt")) as f:
+    SWL = f.read().splitlines()
+
 
 
 def main() -> None:
@@ -23,8 +27,9 @@ def main() -> None:
     match args.command:
         case "search":
             print(f"Searching for: {args.query}")
-            results = ls.keyword_search(args.query, MDB)
-            for i in range(5):
+            results = ls.keyword_search(args.query, MDB, SWL)
+            list_range = min(5, len(results))
+            for i in range(list_range):
                 print(f"{i+1}. {results[i]["title"]}")
             print("")
         case _:
