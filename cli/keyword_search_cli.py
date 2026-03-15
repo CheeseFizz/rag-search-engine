@@ -22,6 +22,8 @@ def main() -> None:
     search_parser = subparsers.add_parser("search", help="Search movies using BM25")
     search_parser.add_argument("query", type=str, help="Search query")
 
+    search_parser = subparsers.add_parser("build", help="Builds the search index")
+
     args = parser.parse_args()
 
     match args.command:
@@ -32,6 +34,12 @@ def main() -> None:
             for i in range(list_range):
                 print(f"{i+1}. {results[i]["title"]}")
             print("")
+        case "build":
+            inv_index = ls.InvertedIndex(SWL)
+            inv_index.build(MDB["movies"])
+            inv_index.save()
+            docs = inv_index.get_documents("merida")
+            print(f"First document for token 'merida' = {docs[0]}")
         case _:
             parser.print_help()
 
