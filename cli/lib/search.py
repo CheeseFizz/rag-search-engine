@@ -29,7 +29,7 @@ class InvertedIndex:
             return list()
         return sorted(self.index[term.lower()])
 
-    def build(self, movies :list[dict[str]]):
+    def build(self, movies :list[dict[str, str]]):
         """
         Builds the index and docmap. Recreates these objects when run.
         """
@@ -47,6 +47,15 @@ class InvertedIndex:
             pickle.dump(self.index, f)
         with self.__cache.joinpath("docmap.pkl").open("wb") as f:
             pickle.dump(self.docmap, f)
+    
+    def load(self):
+        if not self.__cache.joinpath("index.pkl").exists() or not self.__cache.joinpath("docmap.pkl").exists():
+            raise FileNotFoundError("saved index not found")
+        with self.__cache.joinpath("index.pkl").open("rb") as f:
+            self.index = pickle.load(f)
+        with self.__cache.joinpath("docmap.pkl").open("rb") as f:
+            self.docmap = pickle.load(f)
+        
 
 def tokenize(text :str, stopwords :list[str]) -> list[str]:
     """
@@ -65,30 +74,18 @@ def tokenize(text :str, stopwords :list[str]) -> list[str]:
     return tokens
 
 
-def keyword_search(query :str, database :dict, stopwords :list[str]) -> list[dict]:
+def keyword_search(query :str, database :InvertedIndex, stopwords :list[str], max_items :int=5) -> list[dict]:
     results = []
-    if len(database["movies"]) == 0:
-        raise ValueError("database argument has no key 'movies'")
+    if len(database.index) == 0:
+        raise ValueError("database has no data")
     
     tquery = tokenize(query, stopwords)
-
-    for movie in database["movies"]:
-        try:
-            # assumes item will be a string;
-            # I doubt I need to care, but try block just in case
-
-            tmovie = tokenize(movie, stopwords)
-
-            for qt in tquery:
-                if movie in results:
-                    break
-                for mt in tmovie:
-                    if qt in mt:
-                        results.append(movie)
-                        break
-
-        except Exception as e:
-            # if corrupt entry isn't a string, just keep going
-            continue
+    
+    for t in tquery:
+        results += database.get_documents(t)
+        if len(results) > max_items:
+            results = results[0:max_items]
+            break
+        
     return results
 

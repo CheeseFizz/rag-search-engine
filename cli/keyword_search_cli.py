@@ -29,17 +29,17 @@ def main() -> None:
     match args.command:
         case "search":
             print(f"Searching for: {args.query}")
-            results = ls.keyword_search(args.query, MDB, SWL)
-            list_range = min(5, len(results))
-            for i in range(list_range):
-                print(f"{i+1}. {results[i]["title"]}")
+            inv_index = ls.InvertedIndex(SWL)
+            inv_index.load()
+            results = ls.keyword_search(args.query, inv_index, SWL)
+            for i in range(len(results)):
+                m = inv_index.docmap[results[i]]
+                print(f"{i+1}. {m["title"]}")
             print("")
         case "build":
             inv_index = ls.InvertedIndex(SWL)
             inv_index.build(MDB["movies"])
             inv_index.save()
-            docs = inv_index.get_documents("merida")
-            print(f"First document for token 'merida' = {docs[0]}")
         case _:
             parser.print_help()
 
