@@ -1,6 +1,7 @@
 from string import punctuation
 from nltk.stem import PorterStemmer
 from pathlib import Path
+from collections import Counter
 
 import pickle
 
@@ -12,14 +13,18 @@ class InvertedIndex:
         self.index = dict()
         self.docmap = dict()
         self.stopwords = stopwords
+        self.term_frequencies = dict()
         self.__cache = Path(__file__).parent.parent.parent.joinpath("cache")
 
     def __add_document(self, doc_id, text):
         tdoc = tokenize(text, self.stopwords)
+        if not doc_id in self.term_frequencies:
+            self.term_frequencies[doc_id] = Counter()
         for t in tdoc:
             if not t in self.index:
                 self.index[t] = set()
-            self.index[t].add(doc_id)            
+            self.index[t].add(doc_id)
+            self.term_frequencies[doc_id][t] += 1            
 
     def get_documents(self, term :str) -> list[int]:
         """
@@ -28,6 +33,15 @@ class InvertedIndex:
         if not term.lower() in self.index:
             return list()
         return sorted(self.index[term.lower()])
+    
+    def get_tf(self, doc_id :int, term :str) -> int:
+        """
+        Returns the number of times a tokenized form of term shows up in the document
+        """
+        tterm = tokenize(term, self.stopwords)
+        if len(tterm) > 1:
+            raise ValueError("term can only be a single word")
+        return self.term_frequencies[doc_id][tterm[0]]
 
     def build(self, movies :list[dict[str, str]]):
         """
@@ -47,6 +61,8 @@ class InvertedIndex:
             pickle.dump(self.index, f)
         with self.__cache.joinpath("docmap.pkl").open("wb") as f:
             pickle.dump(self.docmap, f)
+        with self.__cache.joinpath("term_frequencies.pkl").open("wb") as f:
+            pickle.dump(self.term_frequencies, f)
     
     def load(self):
         if not self.__cache.joinpath("index.pkl").exists() or not self.__cache.joinpath("docmap.pkl").exists():
@@ -55,6 +71,8 @@ class InvertedIndex:
             self.index = pickle.load(f)
         with self.__cache.joinpath("docmap.pkl").open("rb") as f:
             self.docmap = pickle.load(f)
+        with self.__cache.joinpath("term_frequencies.pkl").open("rb") as f:
+            self.term_frequencies = pickle.load(f)
         
 
 def tokenize(text :str, stopwords :list[str]) -> list[str]:

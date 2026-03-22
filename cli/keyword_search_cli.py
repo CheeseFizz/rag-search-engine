@@ -24,22 +24,29 @@ def main() -> None:
 
     search_parser = subparsers.add_parser("build", help="Builds the search index")
 
+    search_parser = subparsers.add_parser("tf", help="Gets the count of term in the document")
+    search_parser.add_argument("document_id", type=int, help="Search query")
+    search_parser.add_argument("term", type=str, help="Search query")
+
     args = parser.parse_args()
 
+    inv_index = ls.InvertedIndex(SWL)
     match args.command:
         case "search":
             print(f"Searching for: {args.query}")
-            inv_index = ls.InvertedIndex(SWL)
             inv_index.load()
             results = ls.keyword_search(args.query, inv_index, SWL)
             for i in range(len(results)):
                 m = inv_index.docmap[results[i]]
-                print(f"{i+1}. {m["title"]}")
+                print(f"{i+1}. {m['title']}")
             print("")
         case "build":
-            inv_index = ls.InvertedIndex(SWL)
             inv_index.build(MDB["movies"])
             inv_index.save()
+        case "tf":
+            inv_index.load()
+            results = inv_index.get_tf(args.document_id, args.term)
+            print(results)
         case _:
             parser.print_help()
 
