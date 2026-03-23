@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import argparse, json
+import argparse, json, math
 from pathlib import Path
 
 import lib.search as ls
@@ -28,6 +28,9 @@ def main() -> None:
     search_parser.add_argument("document_id", type=int, help="Search query")
     search_parser.add_argument("term", type=str, help="Search query")
 
+    search_parser = subparsers.add_parser("idf", help="Gets the inverse document frequency of term in the database")
+    search_parser.add_argument("term", type=str, help="Search query")
+
     args = parser.parse_args()
 
     inv_index = ls.InvertedIndex(SWL)
@@ -47,6 +50,12 @@ def main() -> None:
             inv_index.load()
             results = inv_index.get_tf(args.document_id, args.term)
             print(results)
+        case "idf":
+            inv_index.load()
+            total_doc_count = len(inv_index.docmap)
+            term_match_doc_count = len(ls.keyword_search(args.term, inv_index, SWL, max_items=len(inv_index.docmap)))
+            idf = math.log((total_doc_count + 1) / (term_match_doc_count + 1))
+            print(f"Inverse document frequency of '{args.term}': {idf:.2f}")
         case _:
             parser.print_help()
 
