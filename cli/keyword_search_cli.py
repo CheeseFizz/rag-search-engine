@@ -53,8 +53,7 @@ def main() -> None:
         case "idf":
             inv_index.load()
             total_doc_count = len(inv_index.docmap)
-            # t = ls.tokenize(args.term, SWL)
-            term_match_doc_count = len(inv_index.get_documents(args.term))
+            term_match_doc_count = len(inv_index.get_documents(ls.tokenize(args.term,SWL)[0]))
             idf = math.log((total_doc_count + 1) / (term_match_doc_count + 1))
             print(f"Inverse document frequency of '{args.term}': {idf:.2f}")
         case _:

@@ -23,7 +23,8 @@ class InvertedIndex:
         for t in tdoc:
             if not t in self.index:
                 self.index[t] = set()
-            self.index[t].add(doc_id)
+            if not doc_id in self.index[t]:
+                self.index[t].add(doc_id)
             self.term_frequencies[doc_id][t] += 1            
 
     def get_documents(self, term :str) -> list[int]:
@@ -83,13 +84,12 @@ def tokenize(text :str, stopwords :list[str]) -> list[str]:
     
     
     tokens = str.translate(text.lower(), TOKENIZE_STR_TRANSFORM).split(" ")
+    results = list()
     
     for t in tokens:
-        if t in stopwords or t == "":
-            tokens.remove(t)
-            continue
-        tokens[tokens.index(t)] = stemmer.stem(t)
-    return tokens
+        if t not in stopwords or t != "":
+            results.append(stemmer.stem(t))
+    return results
 
 
 def keyword_search(query :str, database :InvertedIndex, stopwords :list[str], max_items :int=5) -> list[dict]:
