@@ -87,7 +87,7 @@ def tokenize(text :str, stopwords :list[str]) -> list[str]:
     results = list()
     
     for t in tokens:
-        if t not in stopwords or t != "":
+        if t not in stopwords and t != "":
             results.append(stemmer.stem(t))
     return results
 
