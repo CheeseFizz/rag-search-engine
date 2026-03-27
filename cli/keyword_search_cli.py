@@ -25,11 +25,15 @@ def main() -> None:
     search_parser = subparsers.add_parser("build", help="Builds the search index")
 
     search_parser = subparsers.add_parser("tf", help="Gets the count of term in the document")
-    search_parser.add_argument("document_id", type=int, help="Search query")
-    search_parser.add_argument("term", type=str, help="Search query")
+    search_parser.add_argument("doc_id", type=int, help="Document ID")
+    search_parser.add_argument("term", type=str, help="Search term")
 
     search_parser = subparsers.add_parser("idf", help="Gets the inverse document frequency of term in the database")
-    search_parser.add_argument("term", type=str, help="Search query")
+    search_parser.add_argument("term", type=str, help="Search term")
+
+    search_parser = subparsers.add_parser("tfidf", help="Gets the inverse document frequency of term in the database")
+    search_parser.add_argument("doc_id", type=int, help="Document ID")
+    search_parser.add_argument("term", type=str, help="Search term")
 
     args = parser.parse_args()
 
@@ -48,7 +52,7 @@ def main() -> None:
             inv_index.save()
         case "tf":
             inv_index.load()
-            results = inv_index.get_tf(args.document_id, args.term)
+            results = inv_index.get_tf(args.doc_id, args.term)
             print(results)
         case "idf":
             inv_index.load()
@@ -56,6 +60,14 @@ def main() -> None:
             term_match_doc_count = len(inv_index.get_documents(ls.tokenize(args.term,SWL)[0]))
             idf = math.log((total_doc_count + 1) / (term_match_doc_count + 1))
             print(f"Inverse document frequency of '{args.term}': {idf:.2f}")
+        case "tfidf":
+            inv_index.load()
+            total_doc_count = len(inv_index.docmap)
+            term_match_doc_count = len(inv_index.get_documents(ls.tokenize(args.term,SWL)[0]))
+            idf = math.log((total_doc_count + 1) / (term_match_doc_count + 1))
+            tf = inv_index.get_tf(args.doc_id, args.term)
+            tf_idf = tf*idf
+            print(f"TF-IDF score of '{args.term}' in document '{args.doc_id}': {tf_idf:.2f}")
         case _:
             parser.print_help()
 

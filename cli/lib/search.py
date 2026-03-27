@@ -83,7 +83,7 @@ def tokenize(text :str, stopwords :list[str]) -> list[str]:
     stemmer = PorterStemmer()
     
     
-    tokens = str.translate(text.lower(), TOKENIZE_STR_TRANSFORM).split(" ")
+    tokens = str.translate(text.lower(), TOKENIZE_STR_TRANSFORM).split()
     results = list()
     
     for t in tokens:
