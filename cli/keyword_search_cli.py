@@ -22,18 +22,21 @@ def main() -> None:
     search_parser = subparsers.add_parser("search", help="Search movies using BM25")
     search_parser.add_argument("query", type=str, help="Search query")
 
-    search_parser = subparsers.add_parser("build", help="Builds the search index")
+    build_parser = subparsers.add_parser("build", help="Builds the search index")
 
-    search_parser = subparsers.add_parser("tf", help="Gets the count of term in the document")
-    search_parser.add_argument("doc_id", type=int, help="Document ID")
-    search_parser.add_argument("term", type=str, help="Search term")
+    tf_parser = subparsers.add_parser("tf", help="Gets the count of term in the document")
+    tf_parser.add_argument("doc_id", type=int, help="Document ID")
+    tf_parser.add_argument("term", type=str, help="Search term")
 
-    search_parser = subparsers.add_parser("idf", help="Gets the inverse document frequency of term in the database")
-    search_parser.add_argument("term", type=str, help="Search term")
+    idf_parser = subparsers.add_parser("idf", help="Gets the inverse document frequency of term in the database")
+    idf_parser.add_argument("term", type=str, help="Search term")
 
-    search_parser = subparsers.add_parser("tfidf", help="Gets the inverse document frequency of term in the database")
-    search_parser.add_argument("doc_id", type=int, help="Document ID")
-    search_parser.add_argument("term", type=str, help="Search term")
+    tfidf_parser = subparsers.add_parser("tfidf", help="Gets the inverse document frequency of term in the database")
+    tfidf_parser.add_argument("doc_id", type=int, help="Document ID")
+    tfidf_parser.add_argument("term", type=str, help="Search term")
+
+    bm25_idf_parser = subparsers.add_parser("bm25idf", help="Get BM25 IDF score for a given term")
+    bm25_idf_parser.add_argument("term", type=str, help="Term to get BM25 IDF score for")
 
     args = parser.parse_args()
 
@@ -68,6 +71,10 @@ def main() -> None:
             tf = inv_index.get_tf(args.doc_id, args.term)
             tf_idf = tf*idf
             print(f"TF-IDF score of '{args.term}' in document '{args.doc_id}': {tf_idf:.2f}")
+        case "bm25idf":
+            inv_index.load()
+            bm25idf = inv_index.get_bm25_idf(args.term)
+            print(f"BM25 IDF score of '{args.term}': {bm25idf:.2f}")
         case _:
             parser.print_help()
 

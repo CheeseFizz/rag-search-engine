@@ -1,3 +1,4 @@
+import math
 from string import punctuation
 from nltk.stem import PorterStemmer
 from pathlib import Path
@@ -43,6 +44,16 @@ class InvertedIndex:
         if len(tterm) > 1:
             raise ValueError("term can only be a single word")
         return self.term_frequencies[doc_id][tterm[0]]
+
+    def get_bm25_idf(self, term: str) -> float:
+        tterm = tokenize(term, self.stopwords)
+        if len(tterm) > 1:
+            raise ValueError("term must be a single word")
+        #log((N - df + 0.5) / (df + 0.5) + 1)
+        N = len(self.docmap)
+        df = len(self.get_documents(tterm[0]))
+        bm25 = math.log(((N - df + 0.5) / (df + 0.5)) + 1)
+        return bm25
 
     def build(self, movies :list[dict[str, str]]):
         """
@@ -106,4 +117,5 @@ def keyword_search(query :str, database :InvertedIndex, stopwords :list[str], ma
             break
         
     return results
+
 
