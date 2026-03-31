@@ -8,6 +8,7 @@ import pickle
 
 
 TOKENIZE_STR_TRANSFORM = str.maketrans("", "", punctuation)
+BM25_K1 = 1.5
 
 class InvertedIndex:
     def __init__(self, stopwords :list[str]):
@@ -54,6 +55,11 @@ class InvertedIndex:
         df = len(self.get_documents(tterm[0]))
         bm25 = math.log(((N - df + 0.5) / (df + 0.5)) + 1)
         return bm25
+    
+    def get_bm25_tf(self, doc_id, term, k1=BM25_K1) -> float:
+        tf = self.get_tf(doc_id, term)
+        bm25tf = (tf * (k1 + 1)) / (tf + k1)
+        return bm25tf
 
     def build(self, movies :list[dict[str, str]]):
         """
