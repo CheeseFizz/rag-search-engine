@@ -9,6 +9,7 @@ import pickle
 
 TOKENIZE_STR_TRANSFORM = str.maketrans("", "", punctuation)
 BM25_K1 = 1.5
+BM25_B = 0.75
 
 class InvertedIndex:
     def __init__(self, stopwords :list[str]):
@@ -16,18 +17,29 @@ class InvertedIndex:
         self.docmap = dict()
         self.stopwords = stopwords
         self.term_frequencies = dict()
+        self.doc_lengths = dict()
         self.__cache = Path(__file__).parent.parent.parent.joinpath("cache")
 
     def __add_document(self, doc_id, text):
         tdoc = tokenize(text, self.stopwords)
         if not doc_id in self.term_frequencies:
             self.term_frequencies[doc_id] = Counter()
+        if not doc_id in self.doc_lengths:
+            self.doc_lengths[doc_id] = 0
         for t in tdoc:
             if not t in self.index:
                 self.index[t] = set()
             if not doc_id in self.index[t]:
                 self.index[t].add(doc_id)
-            self.term_frequencies[doc_id][t] += 1            
+            self.term_frequencies[doc_id][t] += 1   
+        self.doc_lengths[doc_id] = self.term_frequencies[doc_id].total()       
+    
+    def __get_avg_doc_length(self) -> float:
+        totaldocs = len(self.doc_lengths)
+        if totaldocs == 0:
+            return 0.0
+        totaltokens = sum(self.doc_lengths.values())
+        return totaltokens / totaldocs
 
     def get_documents(self, term :str) -> list[int]:
         """
@@ -56,9 +68,10 @@ class InvertedIndex:
         bm25 = math.log(((N - df + 0.5) / (df + 0.5)) + 1)
         return bm25
     
-    def get_bm25_tf(self, doc_id, term, k1=BM25_K1) -> float:
+    def get_bm25_tf(self, doc_id, term, k1=BM25_K1, b=BM25_B) -> float:
+        length_norm = 1 - b + b * (self.doc_lengths[doc_id] / self.__get_avg_doc_length())
         tf = self.get_tf(doc_id, term)
-        bm25tf = (tf * (k1 + 1)) / (tf + k1)
+        bm25tf = (tf * (k1 + 1)) / (tf + k1 * length_norm)
         return bm25tf
 
     def build(self, movies :list[dict[str, str]]):
@@ -81,6 +94,8 @@ class InvertedIndex:
             pickle.dump(self.docmap, f)
         with self.__cache.joinpath("term_frequencies.pkl").open("wb") as f:
             pickle.dump(self.term_frequencies, f)
+        with self.__cache.joinpath("doc_lengths.pkl").open("wb") as f:
+            pickle.dump(self.doc_lengths, f)
     
     def load(self):
         if not self.__cache.joinpath("index.pkl").exists() or not self.__cache.joinpath("docmap.pkl").exists():
@@ -91,6 +106,8 @@ class InvertedIndex:
             self.docmap = pickle.load(f)
         with self.__cache.joinpath("term_frequencies.pkl").open("rb") as f:
             self.term_frequencies = pickle.load(f)
+        with self.__cache.joinpath("doc_lengths.pkl").open("rb") as f:
+            self.doc_lengths = pickle.load(f)
         
 
 def tokenize(text :str, stopwords :list[str]) -> list[str]:
