@@ -73,6 +73,24 @@ class InvertedIndex:
         tf = self.get_tf(doc_id, term)
         bm25tf = (tf * (k1 + 1)) / (tf + k1 * length_norm)
         return bm25tf
+    
+    def bm25(self, doc_id, term) -> float:
+        tf = self.get_bm25_tf(doc_id, term)
+        idf = self.get_bm25_idf(term)
+        return tf * idf
+    
+    def bm25_search(self, query, limit) -> list[tuple[int,float]]:
+        tq = tokenize(query, self.stopwords)
+        if len(tq) == 0:
+            raise ValueError("no query passed")
+        scores = dict()
+        for doc in self.index:
+            scores[doc] = 0
+            for t in tq:
+                scores[doc] += self.bm25(doc, t)
+        s = sorted(scores.items(), key=lambda item: item[1], reverse=True)
+        return s[0:limit]
+
 
     def build(self, movies :list[dict[str, str]]):
         """
