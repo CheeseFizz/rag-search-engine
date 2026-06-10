@@ -84,7 +84,7 @@ class InvertedIndex:
         if len(tq) == 0:
             raise ValueError("no query passed")
         scores = dict()
-        for doc in self.index:
+        for doc in self.docmap.keys():
             scores[doc] = 0
             for t in tq:
                 scores[doc] += self.bm25(doc, t)
