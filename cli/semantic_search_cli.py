@@ -15,6 +15,9 @@ def main():
     embed_text_parser = subparsers.add_parser("embed_text", help="Get a sense of the embedding with the input text")
     embed_text_parser.add_argument("text", type=str, help="text to embed")
 
+    embed_query_parser = subparsers.add_parser("embed_query", help="Embed query text")
+    embed_query_parser.add_argument("query", type=str, help="text to embed")
+
     
     args = parser.parse_args()
 
@@ -25,6 +28,8 @@ def main():
             ss.verify_embeddings()
         case "embed_text":
             ss.embed_text(args.text)
+        case "embed_query":
+            ss.embed_query_text(args.query)
         case _:
             parser.print_help()
 
