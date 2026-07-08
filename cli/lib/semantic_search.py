@@ -38,12 +38,24 @@ class SemanticSearch:
             self.document_map[doc['id']] = doc
             doclist.append(f"{doc['title']}: {doc['description']}")
         if self.__cache.joinpath("movie_embeddings.npy").exists():
+            print("loading embeddings from cache")
             self.__load()
             if len(self.embeddings) == len(self.documents):
                 return self.embeddings
         
+        print("building embeddings")
         self.build_embeddings(documents)
         return self.embeddings
+    
+    def search(self, query, limit):
+
+        pass
+
+        if self.build_embeddings is None:
+            raise ValueError("No embeddings loaded. Call `load_or_create_embeddings` first.")
+        embedded_query = self.generate_embedding(query)
+        for doc_em in self.embeddings:
+            cs = cosine_similarity(query, doc_em)
         
 
     def __save(self):
@@ -84,3 +96,13 @@ def embed_query_text(query):
     print(f"Query: {query}")
     print(f"First 3 dimensions: {embedding[:3]}")
     print(f"Shape: {embedding.shape}")
+
+def cosine_similarity(vec1: np.ndarray, vec2: np.ndarray) -> float:
+    dot_product = np.dot(vec1, vec2)
+    norm1 = np.linalg.norm(vec1)
+    norm2 = np.linalg.norm(vec2)
+
+    if norm1 == 0 or norm2 == 0:
+        return 0.0
+
+    return dot_product / (norm1 * norm2)
