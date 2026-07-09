@@ -54,8 +54,21 @@ class SemanticSearch:
         if self.build_embeddings is None:
             raise ValueError("No embeddings loaded. Call `load_or_create_embeddings` first.")
         embedded_query = self.generate_embedding(query)
-        for doc_em in self.embeddings:
-            cs = cosine_similarity(query, doc_em)
+        sscores = []
+        for i, doc_em in enumerate(self.embeddings):
+            cs = cosine_similarity(embedded_query, doc_em)
+            doc = self.document_map[str(i+1)]
+            sscores.append((cs, doc))
+        sorted_sscores = sorted(sscores, key=lambda item: item[0], reverse=True)
+        results = []
+        for i in range(limit):
+            d = dict()
+            d["score"] = sorted_sscores[i][0]
+            d["title"] = sorted_sscores[i][1]["title"]
+            d["description"] = sorted_sscores[i][1]["description"]
+            results.append(d)
+        
+
         
 
     def __save(self):
