@@ -10,13 +10,13 @@ class SemanticSearch:
     def __init__(self, model='all-MiniLM-L6-v2'):
 
         # Load the model (downloads automatically the first time)
-        self.embeddings = None
-        self.documents = None
+        self.embeddings: np.ndarray | None = None
+        self.documents: list[dict] | None = None
         self.document_map = dict()
         self._cache = Path(__file__).parent.parent.parent.joinpath("cache")
         self.model = SentenceTransformer(model)
 
-    def generate_embedding(self, text):
+    def generate_embedding(self, text: str) -> object:
         if len(text.strip()) == 0:
             raise ValueError("generate_embedding: text input was empty or whitespace")
         embedding = self.model.encode([text])[0]
@@ -51,7 +51,7 @@ class SemanticSearch:
     def search(self, query, limit):
         if self.build_embeddings is None:
             raise ValueError("No embeddings loaded. Call `load_or_create_embeddings` first.")
-        embedded_query = self.generate_embedding(query)
+        embedded_query: np.ndarray = self.generate_embedding(query)
         sscores = []
         for i, doc_em in enumerate(self.embeddings):
             cs = cosine_similarity(embedded_query, doc_em)
@@ -80,7 +80,7 @@ class SemanticSearch:
 class ChunkedSemanticSearch(SemanticSearch):
     def __init__(self, model_name: str = "all-MiniLM-L6-v2") -> None:
         super().__init__(model_name)
-        self.chunk_embeddings = None
+        self.chunk_embeddings: np.ndarray | None = None
         self.chunk_metadata = None
 
     def build_chunk_embeddings(self, documents: list[dict]) -> np.ndarray:
@@ -129,6 +129,43 @@ class ChunkedSemanticSearch(SemanticSearch):
         
         #if nothing to load, create new
         return self.build_chunk_embeddings(documents)
+
+    def search_chunks(self, query: str, limit: int = 10):
+        chunk_scores: list[dict] = []
+        embeded_query = super().generate_embedding(query)
+        for i_chunk, cem in enumerate(self.chunk_embeddings):
+            cs = cosine_similarity(cem, embeded_query)
+            md = self.chunk_metadata[i_chunk]
+            if md['chunk_idx'] != i_chunk:
+                raise Exception(f"expected chunk_idx {i_chunk}; got chunk_idx {md['chunk_idx']}")
+            chunk_scores.append(
+                {
+                    'chunk_idx': i_chunk,
+                    'movie_idx': md['movie_idx'],
+                    'score': cs
+                }
+            )
+        high_scores: dict[int,int] = dict()
+        for cs in chunk_scores:
+            if cs['movie_idx'] not in high_scores.keys():
+                high_scores[cs['movie_idx']] = cs['score']
+                continue
+            if cs['score'] > high_scores[cs['movie_idx']]:
+                high_scores[cs['movie_idx']] = cs['score']
+
+        sorted_scores = sorted(high_scores.items(), key=lambda item: item[1], reverse=True)
+        results = []
+        for i in range(limit):
+            
+            d = {
+                "id": self.documents[sorted_scores[i][0]]['id'],
+                "title": self.documents[sorted_scores[i][0]]['title'],
+                "document": self.documents[sorted_scores[i][0]]['description'][:100],
+                "score": round(sorted_scores[i][1], SCORE_PRECISION),
+                "metadata": self. or {},
+            }
+            results.append(d)
+        return results
 
 
 
